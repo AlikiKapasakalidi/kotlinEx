@@ -2,4 +2,4 @@ package com.example.assignment
 
 import androidx.compose.runtime.mutableStateOf
 
-data class Note( val post: String)
+data class Post(val post: String)

@@ -1,13 +1,10 @@
 package com.example.assignment
 
-import android.content.ContentValues.TAG
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,19 +12,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
@@ -72,22 +64,23 @@ fun MainScaffoldView(){
 fun MainContent(navController: NavHostController){
     NavHost(navController = navController, startDestination = HOME_ROUTE ){
         composable(route = HOME_ROUTE){ HomeView()}
-        composable(route = NOTE_ROUTE){ NoteView() }
+        composable(route = NOTE_ROUTE){ PostView() }
     }
     }
 
 @Composable
-fun HomeView(){
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.DarkGray)){
+fun HomeView() {
 
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.DarkGray)
+    ) {
     }
+
 }
-
-
 @Composable
-fun NoteView(){
+fun PostView(){
 
     var postText by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
@@ -97,14 +90,15 @@ fun NoteView(){
 
 
 
-    val noteVM = viewModel<NoteViewModel>(LocalContext.current as ComponentActivity)
+    val postVM = viewModel<PostViewModel>(LocalContext.current as ComponentActivity)
 
 
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(10.dp),
-            horizontalAlignment =  Alignment.CenterHorizontally,
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ){
 
             Text(
@@ -118,19 +112,21 @@ fun NoteView(){
 
             OutlinedTextField(value = title,
                 onValueChange = {title = it},
-                label = { Text(text = "title", color = Color.White)},
+                label = { Text(text = "title", color = Color.Black)},
                 modifier = Modifier
-                    .background(Color.DarkGray)
+                    .background(Color.White)
                     .height(60.dp)
-                    .border(2.dp, Color(0xFFE91E63)))
+                    .border(2.dp, Color(0xFFE91E63))
+
+            )
 
             Divider(thickness = 10.dp)
 
             OutlinedTextField(value = postText,
                 onValueChange = {postText = it},
-                label = { Text(text = "What's new?", color = Color.White)},
+                label = { Text(text = "What's new?", color = Color.Black)},
                 modifier = Modifier
-                    .background(Color.DarkGray)
+                    .background(Color.White)
                     .height(100.dp)
                     .border(2.dp, Color(0xFFE91E63)))
 
@@ -143,26 +139,20 @@ fun NoteView(){
                 fireStore
                     .collection("Published")
                     .document(title)
-                    .set(Note(postText))
+                    .set(Post(postText))
 
 
-                noteVM.addNote(Note(postText))
+                postVM.addPost(Post(postText))
+
                 fireStore
                     .collection("Published")
                     .document(title)
                     .get()
                     .addOnSuccessListener {
                         pst = it.get("post").toString()
-                       /* for (doc in it) {
-                            Log.d(
-                                doc,
-                                doc!!["post"].toString()
-                            )
-                        }*/
+
                     }
-                    .addOnFailureListener { exception ->
-                        Log.w(TAG, "Error getting documents.", exception)
-                    }
+
 
 
 
@@ -173,7 +163,7 @@ fun NoteView(){
                     color = Color(0xFFE91E63))
             }
 
-            noteVM.notes.value.forEach{
+            postVM.posts.value.forEach{
                 Divider(thickness = 2.dp)
                 Card(modifier = Modifier
                     .border(2.dp, Color(0xFFE91E63))
@@ -187,9 +177,16 @@ fun NoteView(){
                         Text(text = pst)
 
                         Icon(painter = painterResource(id = R.drawable.ic_delete),
-                            contentDescription ="delete_note",
+                            contentDescription ="delete_post",
                             modifier = Modifier
-                                .clickable {}
+
+                                .clickable {
+                                    fireStore
+                                        .collection("Published")
+                                        .document(title)
+                                        .delete()
+                                    postVM.removePosts(Post(postText))
+                                }
                                 .height(30.dp)
                         )
                     }
@@ -255,79 +252,34 @@ fun LoginView(userVM: UserView) {
 
     }
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(200.dp),
-        verticalArrangement = Arrangement.SpaceEvenly,
+
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.DarkGray),
         horizontalAlignment = Alignment.CenterHorizontally
-    ){
+    ) {
         OutlinedTextField(
             value = email,
-            onValueChange ={email= it},
-            label = {Text(text ="email")})
-
+            onValueChange = { email = it },
+            label = { Text(text = "email") },
+            modifier = Modifier.background(Color.White))
+Spacer(modifier = Modifier.height(10.dp))
         OutlinedTextField(
             value = password,
-            onValueChange ={password= it},
-        label = {Text(text ="password")},
-        visualTransformation = PasswordVisualTransformation())
-        
-        OutlinedButton(onClick = { userVM.loginUser(email, password)}) {
-            Text(text="Log in", color = Color.Black)
-        }
-    
-    }
+            onValueChange = { password = it },
+            label = { Text(text = "password") },
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.background(Color.White)
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(
+            onClick = { userVM.loginUser(email, password) },
 
-       /* Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 10.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text(text = "Log in", color = Color(0xFFE91E63) )
 
-            Text (
-                modifier = Modifier.padding(bottom = 10.dp, top = 10.dp),
-                text = "Enter your email")
+        }
 
-            OutlinedTextField(
-                value = email,
-                onValueChange ={email= it},
-                label = {Text(text ="email")})
-
-
-            Text (
-                modifier = Modifier.padding(bottom = 10.dp, top = 10.dp),
-                text = "Enter your password")
-
-            OutlinedTextField(
-                value = password,
-                onValueChange ={password= it},
-                label = {Text(text ="password")},
-                visualTransformation = PasswordVisualTransformation())
-
-
-            OutlinedButton(
-                onClick = { Firebase.auth.createUserWithEmailAndPassword(email,password)},
-                border = BorderStroke(1.dp, Color.Black),
-                shape = RoundedCornerShape(5.dp),
-                modifier = Modifier
-                    .defaultMinSize(
-                        minWidth = 120.dp,
-                        minHeight = 35.dp
-                    )
-                    .padding(top = 50.dp)
-
-            ) {
-                Text(
-                    "Create account",
-                    style = MaterialTheme.typography.body2,
-                    color = Color.Black
-                )
-            }
-
-        }*/
     }
-
-
+}
 
